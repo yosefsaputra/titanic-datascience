@@ -52,14 +52,20 @@ for seq, degree in enumerate(degree_list):
 
     # Plotting
     ax = axarr[int(seq / subplot_col), seq % subplot_col]
-    ax.text(0.9, 0.9, s='degree %s' % degree, horizontalalignment='right', verticalalignment='top', transform=ax.transAxes)
+    ax.text(0.9,
+            0.9,
+            s='degree %s' % degree,
+            horizontalalignment='right',
+            verticalalignment='top',
+            transform=ax.transAxes)
     ax.set_ylim(np.min(y) * 1.5, np.max(y) * 1.5)
-    ax.scatter(x_star, y_star, s=1, label='model')
-    ax.scatter(x, y, s=1, label='training')
-    ax.scatter(x_test, y_test_predicted, s=1, label='test')
+    ax.scatter(x_star, y_star, s=0.25, label='model')
+    ax.scatter(x, y, s=5, label='training')
+    ax.scatter(x_test, y_test_predicted, s=5, label='test')
     if seq == 0:
         axarr[int(seq / subplot_col), seq % subplot_col].legend()
 
+    print('Model Coef (M=%s): %s, %s' % (degree, model.intercept_, model.coef_))
 
 plt.figure()
 plt.title('RMSE vs degree')
@@ -67,4 +73,6 @@ plt.scatter(degree_list, rmse_train_list)
 plt.plot(degree_list, rmse_train_list)
 plt.scatter(degree_list, rmse_test_list)
 plt.plot(degree_list, rmse_test_list)
+plt.xlabel('complexity')
+plt.ylabel('unit')
 plt.show()
