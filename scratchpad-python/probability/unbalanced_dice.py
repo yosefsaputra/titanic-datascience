@@ -30,7 +30,7 @@ def getSamples(n):
 
 
 plt.figure()
-for j in range(1, 1000):
+for j in range(1, 10):
     x = [getSamples(j) for i in range(100)]
 
     plt.hist(x, bins=200)
