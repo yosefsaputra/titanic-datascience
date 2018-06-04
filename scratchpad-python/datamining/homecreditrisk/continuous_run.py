@@ -26,6 +26,6 @@ while True:
                 'expected_epochs' in setup_json['others'] and \
                 setup_json['epochs'] < setup_json['others']['expected_epochs']:
 
-                os.system('python train_model.py \"%s\" 20' % setup_json_path)
+                os.system('python train_model.py \"%s\" 5' % setup_json_path)
 
     time.sleep(3)

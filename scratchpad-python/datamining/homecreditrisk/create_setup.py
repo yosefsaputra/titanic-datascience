@@ -251,7 +251,7 @@ training_targets_onehot = (preprocessing.OneHotEncoder().fit_transform(training_
 validation_targets_onehot = (preprocessing.OneHotEncoder().fit_transform(validation_targets.reshape(-1, 1))).toarray()
 
 print('Preparing Settings to create ...')
-def_epochs = 50
+def_epochs = 20
 def_bs = 1000
 def_act = 'sigmoid'
 def_last_act = 'sigmoid'
@@ -294,7 +294,7 @@ potential_configs = [
     # Nadam
     {'optimizer': optimizers.Nadam(), 'bs': def_bs, 'epochs': def_epochs, 'loss': def_loss,
      'act': def_act, 'last_act': def_last_act, 'dropout': def_dropout, 'dropout_rate': def_dropout_rate,
-     'add_name': def_add_name}
+     'add_name': def_add_name},
 ]
 
 if len(default_dnn_configs) > 0:
@@ -361,5 +361,6 @@ for config in dnn_configs:
                      'columns': str(training_credit_application.columns.values.tolist()),
                      'dropout': dropout,
                      'dropout_rate': dropout_rate,
+                     'running': False,
                      })
     setup.save(save_path)

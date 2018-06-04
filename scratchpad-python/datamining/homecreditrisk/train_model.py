@@ -10,14 +10,17 @@ try:
 except IndexError as e:
     max_epoch_run = None
 except Exception as e:
-    max_epoch_run = 20
+    max_epoch_run = 5
 
 continue_setup = Setup('')
 continue_setup.load(rel_filepath=path_setup_json)
 expected_epochs = continue_setup.getOthers()['expected_epochs']
 actual_epochs = continue_setup.getEpoch()
+status_running = continue_setup.getOthers()['running'] if 'running' in continue_setup.getOthers() else False
 
-if actual_epochs < expected_epochs:
+setup_save_path = 'setup'
+
+if actual_epochs < expected_epochs and not status_running:
     training_ids, training_data, training_targets, \
         validation_ids, validation_data, validation_targets, \
         testing_ids, testing_data, testing_targets = continue_setup.getData()
@@ -25,11 +28,14 @@ if actual_epochs < expected_epochs:
     training_targets_onehot = (preprocessing.OneHotEncoder().fit_transform(training_targets.reshape(-1, 1))).toarray()
     validation_targets_onehot = (preprocessing.OneHotEncoder().fit_transform(validation_targets.reshape(-1, 1))).toarray()
 
+    continue_setup.setOthers({'running': True})
+    continue_setup.save_setupfile(setup_save_path)
+
     epoch_run = 0
     for epoch in range(continue_setup.getEpoch() + 1, expected_epochs + 1):
         print('Training \'%s\': Epoch %d' % (continue_setup.getName(), epoch))
         dropout = continue_setup.getModel().fit(training_data, training_targets_onehot,
-                                                batch_size=1000, epochs=1, verbose=False,
+                                                batch_size=1000, epochs=1, verbose=True,
                                                 validation_data=(validation_data, validation_targets_onehot))
 
         training_predictions_onehot = continue_setup.getModel().predict(training_data)
@@ -56,6 +62,9 @@ if actual_epochs < expected_epochs:
 
         if max_epoch_run is not None and epoch_run > max_epoch_run:
             break
+
+    continue_setup.setOthers({'running': False})
+    continue_setup.save_setupfile(setup_save_path)
 
 else:
     print('Actual Epochs: %d. Expected Epochs: %d' % (actual_epochs, expected_epochs))

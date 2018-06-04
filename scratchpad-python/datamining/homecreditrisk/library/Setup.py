@@ -456,6 +456,10 @@ class Setup(object):
 
         self._others = self._setup['others']
 
+    def save_setupfile(self, rel_path):
+        with open(os.path.join(os.getcwd(), rel_path, self._name, self._setup['file']['setup']), 'w') as setupfile:
+            json.dump(self._setup, setupfile)
+
     def _backup_version(self, source, destination):
         ignore_list = ['training_data',
                        'validation_data',
