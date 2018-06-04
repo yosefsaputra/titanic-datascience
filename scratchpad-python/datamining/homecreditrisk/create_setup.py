@@ -1,6 +1,7 @@
 from datamining.homecreditrisk.library.Setup import Setup
 
 import math
+import os
 
 import numpy as np
 import pandas as pd
@@ -249,44 +250,116 @@ testing_ids, testing_data, testing_targets = split_ids_data_targets(testing_cred
 training_targets_onehot = (preprocessing.OneHotEncoder().fit_transform(training_targets.reshape(-1, 1))).toarray()
 validation_targets_onehot = (preprocessing.OneHotEncoder().fit_transform(validation_targets.reshape(-1, 1))).toarray()
 
-print('Creating Model ...')
-optimizer = optimizers.Adam(lr=0.001)
-activation = 'sigmoid'
-last_activation = 'sigmoid'
-dropout = False
-dropout_rate = 0.25
-loss = 'binary_crossentropy'
+print('Preparing Settings to create ...')
+def_epochs = 50
+def_bs = 1000
+def_act = 'sigmoid'
+def_last_act = 'sigmoid'
+def_dropout = False
+def_dropout_rate = 0.25
+def_loss = 'binary_crossentropy'
+def_add_name = None
 
-classifier = Sequential()
-input_shape = (training_data.shape[1], )
-classifier.add(Dense(256, activation=activation, input_shape=input_shape))
-if dropout:
-    classifier.add(Dropout(rate=dropout_rate))
-classifier.add(Dense(128, activation=activation))
-if dropout:
-    classifier.add(Dropout(rate=dropout_rate))
-classifier.add(Dense(64, activation=activation))
-if dropout:
-    classifier.add(Dropout(rate=dropout_rate))
-classifier.add(Dense(2, activation=last_activation))
-classifier.compile(loss=loss,
-                   optimizer=optimizer,
-                   metrics=['acc'])
+dnn_configs = []
 
-print('Creating Setup ...')
-setup = Setup('%d. classifier%d' % (1, 1))
-setup.setModel(classifier)
-setup.setData(training_ids=training_ids, training_data=training_data, training_targets=training_targets,
-              validation_ids=validation_ids, validation_data=validation_data, validation_targets=validation_targets,
-              testing_ids=testing_ids, testing_data=testing_data, testing_targets=testing_targets)
-setup.setOthers({'expected_epochs': 30})
-setup.setOthers({'optimizer': optimizer.__class__.__name__,
-                 'lr': float(K.get_value(optimizer.lr)),
-                 'loss': loss,
-                 'activation': activation,
-                 'last_activation': last_activation,
-                 'columns': str(training_credit_application.columns.values.tolist()),
-                 'dropout': dropout,
-                 'dropout_rate': dropout_rate,
-                 })
-setup.save('setup')
+default_dnn_configs = [
+]
+
+potential_configs = [
+    # Adam
+    {'optimizer': optimizers.Adam(), 'bs': def_bs, 'epochs': def_epochs, 'loss': def_loss,
+     'act': def_act, 'last_act': def_last_act, 'dropout': def_dropout, 'dropout_rate': def_dropout_rate,
+     'add_name': def_add_name},
+
+    # SGD
+    {'optimizer': optimizers.SGD(momentum=0.1), 'bs': def_bs, 'epochs': def_epochs * 10, 'loss': def_loss,
+     'act': def_act, 'last_act': def_last_act, 'dropout': def_dropout, 'dropout_rate': def_dropout_rate,
+     'add_name': def_add_name},
+
+    # Adagrad
+    {'optimizer': optimizers.Adagrad(), 'bs': def_bs, 'epochs': def_epochs, 'loss': def_loss,
+     'act': def_act, 'last_act': def_last_act, 'dropout': def_dropout, 'dropout_rate': def_dropout_rate,
+     'add_name': def_add_name},
+
+    # RMSprop
+    {'optimizer': optimizers.RMSprop(), 'bs': def_bs, 'epochs': def_epochs, 'loss': def_loss,
+     'act': def_act, 'last_act': def_last_act, 'dropout': def_dropout, 'dropout_rate': def_dropout_rate,
+     'add_name': def_add_name},
+
+    # Adamax
+    {'optimizer': optimizers.Adamax(), 'bs': def_bs, 'epochs': def_epochs, 'loss': def_loss,
+     'act': def_act, 'last_act': def_last_act, 'dropout': def_dropout, 'dropout_rate': def_dropout_rate,
+     'add_name': def_add_name},
+
+    # Nadam
+    {'optimizer': optimizers.Nadam(), 'bs': def_bs, 'epochs': def_epochs, 'loss': def_loss,
+     'act': def_act, 'last_act': def_last_act, 'dropout': def_dropout, 'dropout_rate': def_dropout_rate,
+     'add_name': def_add_name}
+]
+
+if len(default_dnn_configs) > 0:
+    dnn_configs.extend(default_dnn_configs)
+if len(potential_configs) > 0:
+    dnn_configs.extend(potential_configs)
+
+for config in dnn_configs:
+    print('Creating Model ...')
+    optimizer = config['optimizer']
+    activation = config['act']
+    last_activation = config['last_act']
+    dropout = config['dropout']
+    dropout_rate = config['dropout_rate']
+    loss = config['loss']
+    expected_epochs = config['epochs']
+    batch_size = config['bs']
+    additional_name = config['add_name']
+
+    classifier = Sequential()
+    input_shape = (training_data.shape[1], )
+    classifier.add(Dense(256, activation=activation, input_shape=input_shape))
+    if dropout:
+        classifier.add(Dropout(rate=dropout_rate))
+    classifier.add(Dense(128, activation=activation))
+    if dropout:
+        classifier.add(Dropout(rate=dropout_rate))
+    classifier.add(Dense(64, activation=activation))
+    if dropout:
+        classifier.add(Dropout(rate=dropout_rate))
+    classifier.add(Dense(2, activation=last_activation))
+    classifier.compile(loss=loss,
+                       optimizer=optimizer,
+                       metrics=['acc'])
+
+    print('Creating Setup ...')
+
+    save_path = 'setup'
+    setup_numbers = []
+    max_setup_number = None
+    if os.path.isdir(os.path.join(os.getcwd(), save_path)):
+        for setup_name in os.listdir(os.path.join(os.getcwd(), save_path)):
+            setup_number = int(setup_name.split('.')[0])
+            setup_numbers.append(setup_number)
+        max_setup_number = max(setup_numbers) if len(setup_numbers) > 0 else 0
+    else:
+        max_setup_number = 0
+
+    new_setup_number = max_setup_number + 1
+    setup_name = ('%d. dnn_classifier-%d' % (new_setup_number, new_setup_number)) if additional_name is None \
+        else ('%d. dnn_classifier-%d-%s' % (new_setup_number, new_setup_number, additional_name))
+    setup = Setup(setup_name)
+    setup.setModel(classifier)
+    setup.setData(training_ids=training_ids, training_data=training_data, training_targets=training_targets,
+                  validation_ids=validation_ids, validation_data=validation_data, validation_targets=validation_targets,
+                  testing_ids=testing_ids, testing_data=testing_data, testing_targets=testing_targets)
+    setup.setOthers({'expected_epochs': expected_epochs,
+                     'batch_size': batch_size})
+    setup.setOthers({'optimizer': optimizer.__class__.__name__,
+                     'lr': float(K.get_value(optimizer.lr)),
+                     'loss': loss,
+                     'activation': activation,
+                     'last_activation': last_activation,
+                     'columns': str(training_credit_application.columns.values.tolist()),
+                     'dropout': dropout,
+                     'dropout_rate': dropout_rate,
+                     })
+    setup.save(save_path)
